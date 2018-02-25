@@ -24,13 +24,14 @@ point4 vertices[8] = {
 // RGBA olors
 color4 vertex_colors[8] = {
     color4(0.0, 0.0, 0.0, 1.0), // black
-    color4(1.0, 0.0, 0.0, 1.0), // red
-    color4(1.0, 1.0, 0.0, 1.0), // yellow
+    color4(0.8, 0.0, 0.0, 1.0), // red
+    color4(1.0, 0.7, 0.0, 1.0), // yellow
     color4(0.0, 1.0, 0.0, 1.0), // green
-    color4(0.0, 0.0, 1.0, 1.0), // blue
+    color4(0.0, 0.1, 0.8, 1.0), // blue
     color4(1.0, 0.0, 1.0, 1.0), // magenta
-    color4(1.0, 1.0, 1.0, 1.0), // white
-    color4(0.0, 1.0, 1.0, 1.0)  // cyan
+    color4(0.0, 1.0, 1.0, 1.0),  // cyan    
+    color4(1.0, 1.0, 1.0, 1.0) // white    
+    
 };
 
 // Parameters controlling the size of the Robot's arm
