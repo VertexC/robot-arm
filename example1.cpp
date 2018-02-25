@@ -9,6 +9,8 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 point4 points[NumVertices];
 color4 colors[NumVertices];
 
+
+// vertexices for a 3-D cube
 point4 vertices[8] = {
     point4(-0.5, -0.5, 0.5, 1.0),
     point4(-0.5, 0.5, 0.5, 1.0),
@@ -198,7 +200,7 @@ void init(void)
     Projection = glGetUniformLocation(program, "Projection");
 
     glEnable(GL_DEPTH);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // draw the edge
 
     glClearColor(1.0, 1.0, 1.0, 1.0);
 }
