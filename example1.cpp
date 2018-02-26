@@ -9,7 +9,6 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 point4 points[NumVertices];
 color4 colors[NumVertices];
 
-
 // windowsize
 int window_width = 512;
 int window_height = 512;
@@ -116,24 +115,24 @@ void colorcube()
 void init_camera()
 {
 
-    // projection[up] = Ortho(left, right, bottom, top, zNear, zFar);            
+    // projection[up] = Ortho(left, right, bottom, top, zNear, zFar);
     camera_view[Up] = LookAt(
         vec3(0.0, 0.3, 0.0),
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 0.0, -1.0));
-    projection[Up] = Ortho(-15, 15, -15,15, -20, 10);
+    projection[Up] = Ortho(-15, 15, -15, 15, -20, 10);
 
     camera_view[Front] = LookAt(
         vec3(0.0, 0.0, 0.3),
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 1.0, 0.0));
     projection[Front] = Ortho(-15, 15, -10, 20, -10, 10);
-        
+
     camera_view[Right] = LookAt(
         vec3(0.3, 0.0, 0.0),
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 1.0, 0.0));
-    projection[Right] = Ortho(-15, 15, -10, 20, -10, 10);    
+    projection[Right] = Ortho(-15, 15, -10, 20, -10, 10);
 }
 
 //----------------------------------------------------------------------------
@@ -299,10 +298,9 @@ void menu(int option)
 void reshape(int width, int height)
 {
     glutReshapeWindow(window_width, window_height);
-    
+
     // glViewport(0, 0, width, height);
 
-    
     // GLfloat left = -15, right = 15.0;
     // GLfloat bottom = -15.0, top = 15.0;
     // GLfloat zNear = -20.0, zFar = 10.0;
@@ -321,7 +319,6 @@ void reshape(int width, int height)
     // }
 
     // mat4 projection = Ortho(left, right, bottom, top, zNear, zFar);
-    
 
     glUniformMatrix4fv(Projection, 1, GL_TRUE, projection[dir_selector]);
 
@@ -348,9 +345,41 @@ void keyboard(unsigned char key, int x, int y)
     case 'r':
         dir_selector = Right;
         break;
+    case 'z':
+        Axis = Base;
+        break;
+    case 'x':
+        Axis = LowerArm;
+        break;
+    case 'c':
+        Axis = UpperArm;
+        break;
     }
 }
 
+//----------------------------------------------------------------------------
+void specialkey(int key, int x, int y)
+{
+    switch (key)
+    {
+    case GLUT_KEY_LEFT:
+        // Incrase the joint angle
+        Theta[Axis] += 5.0;
+        if (Theta[Axis] > 360.0)
+        {
+            Theta[Axis] -= 360.0;
+        }
+        break;
+    case GLUT_KEY_RIGHT:
+        // Decrase the joint angle
+        Theta[Axis] -= 5.0;
+        if (Theta[Axis] < 0.0)
+        {
+            Theta[Axis] += 360.0;
+        }
+        break;
+    }
+}
 //----------------------------------------------------------------------------
 
 int main(int argc, char **argv)
@@ -369,6 +398,7 @@ int main(int argc, char **argv)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
+    glutSpecialFunc(specialkey);
     glutMouseFunc(mouse);
 
     int current_menu = glutCreateMenu(menu);
