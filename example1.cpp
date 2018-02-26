@@ -53,7 +53,8 @@ enum
     Up = 1,
     Right = 2,
     NumDirections = 3
-} int dir_selector = 0;
+};
+int dir_selector = 0;
 mat4 camera_view[NumDirections]; // for 3 view direction
 mat4 projection[NumDirections];
 
@@ -120,19 +121,19 @@ void init_camera()
         vec3(0.0, 0.3, 0.0),
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 0.0, -1.0));
-    projection[up] = Ortho(-15, 15, -15,15, -20, 10);
+    projection[Up] = Ortho(-15, 15, -15,15, -20, 10);
 
     camera_view[Front] = LookAt(
         vec3(0.0, 0.0, 0.3),
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 1.0, 0.0));
-    projection[up] = Ortho(-15, 15, -10, 20, -10, 10);
+    projection[Front] = Ortho(-15, 15, -10, 20, -10, 10);
         
     camera_view[Right] = LookAt(
         vec3(0.3, 0.0, 0.0),
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 1.0, 0.0));
-    projection[up] = Ortho(-15, 15, -10, 20, -10, 10);    
+    projection[Right] = Ortho(-15, 15, -10, 20, -10, 10);    
 }
 
 //----------------------------------------------------------------------------
@@ -188,7 +189,7 @@ void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Accumulate ModelView Matrix as we traverse the tree
-    model_view = camera_view;
+    model_view = camera_view[dir_selector];
     transformation = RotateY(Theta[Base]);
     // model_view = RotateY(Theta[Base]);
     base();
@@ -297,6 +298,8 @@ void menu(int option)
 
 void reshape(int width, int height)
 {
+    glutReshapeWindow(window_width, window_height);
+    
     // glViewport(0, 0, width, height);
 
     
@@ -318,10 +321,11 @@ void reshape(int width, int height)
     // }
 
     // mat4 projection = Ortho(left, right, bottom, top, zNear, zFar);
-    // glUniformMatrix4fv(Projection, 1, GL_TRUE, projection);
+    
 
-    // model_view = mat4(1.0); // An Identity matrix
-    glutReshapeWindow(window_width, window_height);
+    glUniformMatrix4fv(Projection, 1, GL_TRUE, projection[dir_selector]);
+
+    model_view = mat4(1.0); // An Identity matrix
 }
 
 //----------------------------------------------------------------------------
@@ -334,6 +338,15 @@ void keyboard(unsigned char key, int x, int y)
     case 'q':
     case 'Q':
         exit(EXIT_SUCCESS);
+        break;
+    case 'w':
+        dir_selector = Up;
+        break;
+    case 'e':
+        dir_selector = Front;
+        break;
+    case 'r':
+        dir_selector = Right;
         break;
     }
 }
