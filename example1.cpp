@@ -265,9 +265,9 @@ void reshape(int width, int height)
 {
     glViewport(0, 0, width, height);
 
-    GLfloat left = -10.0, right = 10.0;
-    GLfloat bottom = -5.0, top = 15.0;
-    GLfloat zNear = -10.0, zFar = 10.0;
+    GLfloat left = -15.0, right = 15.0;
+    GLfloat bottom = -15.0, top = 15.0;
+    GLfloat zNear = -20.0, zFar = 10.0;
 
     GLfloat aspect = GLfloat(width) / height;
 
@@ -322,14 +322,14 @@ int main(int argc, char **argv)
     glutKeyboardFunc(keyboard);
     glutMouseFunc(mouse);
 
-    glutCreateMenu(menu);
+    int current_menu = glutCreateMenu(menu);
     // Set the menu values to the relevant rotation axis values (or Quit)
     glutAddMenuEntry("base", Base);
     glutAddMenuEntry("lower arm", LowerArm);
     glutAddMenuEntry("upper arm", UpperArm);
     glutAddMenuEntry("quit", Quit);
     glutAttachMenu(GLUT_MIDDLE_BUTTON);
-
+    glutSetMenu(current_menu);
     glutMainLoop();
     return 0;
 }
