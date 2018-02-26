@@ -152,7 +152,7 @@ void base()
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
 
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    glDrawArrays(GL_TRIANGLES, 0, NumVertices/3);
 }
 
 //----------------------------------------------------------------------------
@@ -165,7 +165,7 @@ void upper_arm()
                            UPPER_ARM_WIDTH));
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    glDrawArrays(GL_TRIANGLES, 0, NumVertices/3);
 }
 
 //----------------------------------------------------------------------------
@@ -178,15 +178,13 @@ void lower_arm()
                            LOWER_ARM_WIDTH));
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    glDrawArrays(GL_TRIANGLES, 0, NumVertices/3);
 }
 
 //----------------------------------------------------------------------------
 
 void display(void)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     // Accumulate ModelView Matrix as we traverse the tree
     model_view = camera_view[dir_selector];
     transformation = RotateY(Theta[Base]);
@@ -248,6 +246,8 @@ void init(void)
     glEnable(GL_DEPTH);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // draw the edge
 
+    // Draw the sphere
+
     glClearColor(1.0, 1.0, 1.0, 1.0);
 }
 
@@ -287,11 +287,12 @@ void menu(int option)
     {
         exit(EXIT_SUCCESS);
     }
-    else if(option < NumAngles)
+    else if (option < NumAngles)
     {
         Axis = option;
     }
-    else{
+    else
+    {
         dir_selector = option - NumAngles;
     }
 }
@@ -395,7 +396,6 @@ int main(int argc, char **argv)
     glutCreateWindow("robot");
     glewExperimental = GL_TRUE;
     glewInit();
-
     init();
 
     glutDisplayFunc(display);
@@ -409,12 +409,13 @@ int main(int argc, char **argv)
     glutAddMenuEntry("base", Base);
     glutAddMenuEntry("lower arm", LowerArm);
     glutAddMenuEntry("upper arm", UpperArm);
-    glutAddMenuEntry("front view", Front + NumAngles);    
+    glutAddMenuEntry("front view", Front + NumAngles);
     glutAddMenuEntry("up view", Up + NumAngles);
     glutAddMenuEntry("side view", Right + NumAngles);
     glutAddMenuEntry("quit", Quit);
     glutAttachMenu(GLUT_MIDDLE_BUTTON);
     glutSetMenu(current_menu);
     glutMainLoop();
+
     return 0;
 }
