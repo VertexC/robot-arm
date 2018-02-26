@@ -72,7 +72,7 @@ int Axis = Base;
 GLfloat Theta[NumAngles] = {0.0};
 
 // Menu option values
-const int Quit = 4;
+const int Quit = 6;
 
 //----------------------------------------------------------------------------
 
@@ -287,9 +287,12 @@ void menu(int option)
     {
         exit(EXIT_SUCCESS);
     }
-    else
+    else if(option < NumAngles)
     {
         Axis = option;
+    }
+    else{
+        dir_selector = option - NumAngles;
     }
 }
 
@@ -406,6 +409,9 @@ int main(int argc, char **argv)
     glutAddMenuEntry("base", Base);
     glutAddMenuEntry("lower arm", LowerArm);
     glutAddMenuEntry("upper arm", UpperArm);
+    glutAddMenuEntry("front view", Front + NumAngles);    
+    glutAddMenuEntry("up view", Up + NumAngles);
+    glutAddMenuEntry("side view", Right + NumAngles);
     glutAddMenuEntry("quit", Quit);
     glutAttachMenu(GLUT_MIDDLE_BUTTON);
     glutSetMenu(current_menu);
