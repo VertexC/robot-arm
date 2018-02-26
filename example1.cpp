@@ -9,7 +9,6 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 point4 points[NumVertices];
 color4 colors[NumVertices];
 
-
 // vertexices for a 3-D cube
 point4 vertices[8] = {
     point4(-0.5, -0.5, 0.5, 1.0),
@@ -29,9 +28,9 @@ color4 vertex_colors[8] = {
     color4(0.0, 1.0, 0.0, 1.0), // green
     color4(0.0, 0.1, 0.8, 1.0), // blue
     color4(1.0, 0.0, 1.0, 1.0), // magenta
-    color4(0.0, 1.0, 1.0, 1.0),  // cyan    
-    color4(1.0, 1.0, 1.0, 1.0) // white    
-    
+    color4(0.0, 1.0, 1.0, 1.0), // cyan
+    color4(1.0, 1.0, 1.0, 1.0)  // white
+
 };
 
 // Parameters controlling the size of the Robot's arm
@@ -44,6 +43,8 @@ const GLfloat UPPER_ARM_WIDTH = 0.5;
 
 // Shader transformation matrices
 mat4 model_view;
+mat4 camera_view;
+mat4 transformation;
 GLuint ModelView, Projection;
 
 // Array of rotation angles (in degrees) for each rotation axis
@@ -111,7 +112,7 @@ void base()
                            BASE_HEIGHT,
                            BASE_WIDTH));
 
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * instance);
+    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation* instance);
 
     glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 }
@@ -125,7 +126,7 @@ void upper_arm()
                            UPPER_ARM_HEIGHT,
                            UPPER_ARM_WIDTH));
 
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * instance);
+    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
     glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 }
 
@@ -138,7 +139,7 @@ void lower_arm()
                            LOWER_ARM_HEIGHT,
                            LOWER_ARM_WIDTH));
 
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * instance);
+    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
     glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 }
 
@@ -149,15 +150,19 @@ void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Accumulate ModelView Matrix as we traverse the tree
-    model_view = RotateY(Theta[Base]);
+    model_view = camera_view;
+    transformation = RotateY(Theta[Base]);
+    // model_view = RotateY(Theta[Base]);
     base();
 
-    model_view *= (Translate(0.0, BASE_HEIGHT, 0.0) *
-                   RotateZ(Theta[LowerArm]));
+    // model_view *= (Translate(0.0, BASE_HEIGHT, 0.0) *
+    //                RotateZ(Theta[LowerArm]));
+    transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(Theta[LowerArm]));
     lower_arm();
 
-    model_view *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
-                   RotateZ(Theta[UpperArm]));
+    // model_view *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
+    //                RotateZ(Theta[UpperArm]));
+    transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(Theta[UpperArm]);
     upper_arm();
 
     glutSwapBuffers();
@@ -167,6 +172,12 @@ void display(void)
 
 void init(void)
 {
+    // create the camera view
+    camera_view = LookAt(
+        vec3(3, 0, 3),
+        vec3(0, 0, 0),
+        vec3(0, 1, 0));
+
     colorcube();
 
     // Create a vertex array object
