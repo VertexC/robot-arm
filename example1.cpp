@@ -9,6 +9,10 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 point4 points[NumVertices];
 color4 colors[NumVertices];
 
+
+// windowsize
+int window_width = 512;
+int window_height = 512;
 // vertexices for a 3-D cube
 point4 vertices[8] = {
     point4(-0.5, -0.5, 0.5, 1.0),
@@ -43,7 +47,16 @@ const GLfloat UPPER_ARM_WIDTH = 0.5;
 
 // Shader transformation matrices
 mat4 model_view;
-mat4 camera_view;
+enum
+{
+    Front = 0,
+    Up = 1,
+    Right = 2,
+    NumDirections = 3
+} int dir_selector = 0;
+mat4 camera_view[NumDirections]; // for 3 view direction
+mat4 projection[NumDirections];
+
 mat4 transformation;
 GLuint ModelView, Projection;
 
@@ -98,6 +111,31 @@ void colorcube()
 }
 
 //----------------------------------------------------------------------------
+/* Init the camera and projection for different direction*/
+void init_camera()
+{
+
+    // projection[up] = Ortho(left, right, bottom, top, zNear, zFar);            
+    camera_view[Up] = LookAt(
+        vec3(0.0, 0.3, 0.0),
+        vec3(0.0, 0.0, 0.0),
+        vec3(0.0, 0.0, -1.0));
+    projection[up] = Ortho(-15, 15, -15,15, -20, 10);
+
+    camera_view[Front] = LookAt(
+        vec3(0.0, 0.0, 0.3),
+        vec3(0.0, 0.0, 0.0),
+        vec3(0.0, 1.0, 0.0));
+    projection[up] = Ortho(-15, 15, -10, 20, -10, 10);
+        
+    camera_view[Right] = LookAt(
+        vec3(0.3, 0.0, 0.0),
+        vec3(0.0, 0.0, 0.0),
+        vec3(0.0, 1.0, 0.0));
+    projection[up] = Ortho(-15, 15, -10, 20, -10, 10);    
+}
+
+//----------------------------------------------------------------------------
 
 /* Define the three parts */
 /* Note use of push/pop to return modelview matrix
@@ -112,7 +150,7 @@ void base()
                            BASE_HEIGHT,
                            BASE_WIDTH));
 
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation* instance);
+    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
 
     glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 }
@@ -172,11 +210,7 @@ void display(void)
 
 void init(void)
 {
-    // create the camera view
-    camera_view = LookAt(
-        vec3(0, 0.3, 0),
-        vec3(0, 0, 0),
-        vec3(1, 0, 0));
+    init_camera();
 
     colorcube();
 
@@ -263,29 +297,31 @@ void menu(int option)
 
 void reshape(int width, int height)
 {
-    glViewport(0, 0, width, height);
+    // glViewport(0, 0, width, height);
 
-    GLfloat left = -15.0, right = 15.0;
-    GLfloat bottom = -15.0, top = 15.0;
-    GLfloat zNear = -20.0, zFar = 10.0;
+    
+    // GLfloat left = -15, right = 15.0;
+    // GLfloat bottom = -15.0, top = 15.0;
+    // GLfloat zNear = -20.0, zFar = 10.0;
 
-    GLfloat aspect = GLfloat(width) / height;
+    // GLfloat aspect = GLfloat(width) / height;
 
-    if (aspect > 1.0)
-    {
-        left *= aspect;
-        right *= aspect;
-    }
-    else
-    {
-        bottom /= aspect;
-        top /= aspect;
-    }
+    // if (aspect > 1.0)
+    // {
+    //     left *= aspect;
+    //     right *= aspect;
+    // }
+    // else
+    // {
+    //     bottom /= aspect;
+    //     top /= aspect;
+    // }
 
-    mat4 projection = Ortho(left, right, bottom, top, zNear, zFar);
-    glUniformMatrix4fv(Projection, 1, GL_TRUE, projection);
+    // mat4 projection = Ortho(left, right, bottom, top, zNear, zFar);
+    // glUniformMatrix4fv(Projection, 1, GL_TRUE, projection);
 
-    model_view = mat4(1.0); // An Identity matrix
+    // model_view = mat4(1.0); // An Identity matrix
+    glutReshapeWindow(window_width, window_height);
 }
 
 //----------------------------------------------------------------------------
@@ -308,7 +344,7 @@ int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(512, 512);
+    glutInitWindowSize(window_width, window_height);
     glutInitContextVersion(3, 2);
     glutInitContextProfile(GLUT_CORE_PROFILE);
     glutCreateWindow("robot");
