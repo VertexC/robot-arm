@@ -24,6 +24,7 @@ GLuint vbos[2]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
 point4 start_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 end_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 current_position = point4(0.0, 0.0, 0.0, 1.0);
+const float EPSILON = pow(10, -5);
 // windowsize
 int window_width = 512;
 int window_height = 512;
@@ -488,14 +489,46 @@ void specialkey(int key, int x, int y)
 }
 
 //----------------------------------------------------------------------------
-void move(float base_to_start)
+void move(float base_to_start, float lower_arm_to_start, float upper_arm_to_start)
 {
+    Theta[Base] = base_to_start * 180 / PI;
+    Theta[LowerArm] = lower_arm_to_start * 180 / PI;
+    Theta[UpperArm] = upper_arm_to_start * 180 / PI;
     std::cout << base_to_start * 180 / PI << std::endl;
-    Theta[Base] -= base_to_start * 180 / PI;
+    std::cout << lower_arm_to_start * 180 / PI << std::endl;
+    std::cout << upper_arm_to_start * 180 / PI << std::endl;
+
     if (Theta[Base] < 0.0)
     {
         Theta[Base] += 360.0;
     }
+    else if (Theta[Base] > 360.0)
+    {
+        Theta[Base] -= 360.0;
+    }
+
+    if (Theta[UpperArm] < 0.0)
+    {
+        Theta[UpperArm] += 360.0;
+    }
+    else if (Theta[UpperArm] > 360.0)
+    {
+        Theta[UpperArm] -= 360.0;
+    }
+
+    if (Theta[LowerArm] < 0.0)
+    {
+        Theta[LowerArm] += 360.0;
+    }
+    else if (Theta[LowerArm] > 360.0)
+    {
+        Theta[LowerArm] -= 360.0;
+    }
+}
+
+float cos_formula(float a, float b, float c)
+{
+    return acos((pow(a, 2) + pow(b, 2) - pow(c, 2)) / (2 * a * b));
 }
 //----------------------------------------------------------------------------
 
@@ -517,14 +550,64 @@ int main(int argc, char **argv)
         }
         // get position
         start_position = point4(atof(argv[1]), atof(argv[2]), atof(argv[3]), 1.0);
-        end_position = point4(atof(argv[4]), atof(argv[6]), atof(argv[6]), 1.0);
+        end_position = point4(atof(argv[4]), atof(argv[5]), atof(argv[6]), 1.0);
         // set
         current_position = start_position;
         // calculate the ratation needed for base, low arm, high arm
-        float base_to_start = asin(start_position.z /
-                                   (sqrt(pow(start_position.x, 2) +
-                                         pow(start_position.z, 2))));
-        move(base_to_start);
+        // for base
+        float base_to_start = 0.0;
+        float base_theta = asin(abs(start_position.z) /
+                                (sqrt(pow(start_position.x, 2) +
+                                      pow(start_position.z, 2))));
+        std::cout << base_theta * 180 / PI << std::endl;
+        if (start_position.x < 0 && start_position.z < 0)
+        {
+            std::cout << "1" << std::endl;
+            base_to_start = -(PI + base_theta);
+        }
+        else if (start_position.x < 0 && start_position.z > 0)
+        {
+            std::cout << "2" << std::endl;
+            base_to_start = -(PI - base_theta);
+        }
+        else if (start_position.x > 0 && start_position.z > 0)
+        {
+            base_to_start = -base_theta;
+        }
+        else if (start_position.x > 0 && start_position.z < 0)
+        {
+            base_to_start = -(2 * PI - base_theta);
+        }
+        // for lower_arm and upper_arm
+        float lower_arm_to_start = 0;
+        float upper_arm_to_start = 0;
+        start_position.y -= BASE_HEIGHT;
+        start_position.x = sqrt(pow(start_position.x, 2) + pow(start_position.z, 2));
+        if (start_position.y < 0)
+        {
+            lower_arm_to_start -= PI;
+            float theta2 = asin(-start_position.y /
+                                (sqrt(pow(start_position.x, 2) +
+                                      pow(start_position.y, 2))));
+            float distance = sqrt(pow(start_position.x, 2) + pow(start_position.y, 2));
+            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
+            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
+            lower_arm_to_start += (PI / 2 - theta1 - theta2);
+            upper_arm_to_start = (theta1 + theta3);
+        }
+        else
+        {
+            float theta2 = asin(start_position.y /
+                                (sqrt(pow(start_position.x, 2) +
+                                      pow(start_position.y, 2))));
+            float distance = sqrt(pow(start_position.x, 2) + pow(start_position.y, 2));
+            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
+            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
+            lower_arm_to_start = -(PI / 2 - theta1 - theta2);
+            upper_arm_to_start = -(theta1 + theta3);
+        }
+        // for upper_arm
+        move(base_to_start, lower_arm_to_start, upper_arm_to_start);
     }
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
