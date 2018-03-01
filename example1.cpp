@@ -10,13 +10,15 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 point4 points[NumVertices];
 color4 colors[NumVertices];
 
-// line loop
-const SPHERE_ROW = 20;
-const SPHERE_COL = 20;
-point4 SpherePoints[SPHERE_ROW * SPHERE_COL * 2 * 3];
-color4 SphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
-GLuint vaos[3]; // 0: robot cube, 1:line loop, 2:triangle fan
-GLuint vbos[5]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
+// sphere
+const float PI = 3.14;
+const int SPHERE_ROW = 20;
+const int SPHERE_COL = 20;
+const int SPHERE_RADIUS = 1;
+point4 spherePoints[SPHERE_ROW * SPHERE_COL * 2 * 3];
+color4 sphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
+GLuint vaos[2]; // 0: robot cube, 1:line loop, 2:triangle fan
+GLuint vbos[2]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
 
 // windowsize
 int window_width = 512;
@@ -145,6 +147,48 @@ void init_camera()
 }
 
 //----------------------------------------------------------------------------
+/* Init the position and color of sphere*/
+point4 f_u_v(float u, float v)
+{
+    return point4(cos(u) * sin(v),
+                  cos(v), sin(u) * sin(v), 1.0);
+}
+void init_sphere()
+{
+    float start_u = 0.0;
+    float start_v = 0.0;
+    float end_u = PI * 2.0;
+    float end_v = PI;
+    float step_u = (end_u - start_u) / SPHERE_COL;
+    float step_v = (end_v - start_v) / SPHERE_ROW;
+    int k = 0;
+    for (int i = 0; i < SPHERE_COL; i++)
+    {
+        for (int j = 0; j < SPHERE_ROW; j++)
+        {
+            float u = i * step_u + start_u;
+            float v = j * step_v + start_v;
+            float un = (i + 1 == SPHERE_COL) ? end_u : u + step_u;
+            float vn = (j + 1 == SPHERE_ROW) ? end_v : v + step_v;
+            point4 p0 = f_u_v(u, v);
+            point4 p1 = f_u_v(u, vn);
+            point4 p2 = f_u_v(un, v);
+            point4 p3 = f_u_v(un, vn);
+            spherePoints[k++] = p0;
+            spherePoints[k++] = p1;
+            spherePoints[k++] = p2;
+            spherePoints[k++] = p3;
+            spherePoints[k++] = p1;
+            spherePoints[k++] = p2;
+        }
+    }
+    for (int i = 0; i < SPHERE_COL * SPHERE_ROW; i++)
+    {
+        sphereColors[i] = color4(0.0, 0.0, 0.0, 1.0); // black
+    }
+}
+
+//----------------------------------------------------------------------------
 
 /* Define the three parts */
 /* Note use of push/pop to return modelview matrix
@@ -162,6 +206,7 @@ void base()
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
     glBindVertexArray(vaos[0]);
     glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    glBindVertexArray(0);
 }
 
 //----------------------------------------------------------------------------
@@ -174,8 +219,9 @@ void upper_arm()
                            UPPER_ARM_WIDTH));
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
-    glBindVertexArray(vaos[0]);    
+    glBindVertexArray(vaos[0]);
     glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    glBindVertexArray(0);
 }
 
 //----------------------------------------------------------------------------
@@ -188,8 +234,22 @@ void lower_arm()
                            LOWER_ARM_WIDTH));
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
-    glBindVertexArray(vaos[0]);   
+    glBindVertexArray(vaos[0]);
     glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    glBindVertexArray(0);
+}
+
+//----------------------------------------------------------------------------
+void sphere()
+{
+    mat4 instance = (Translate(0.0, 2.0, 0.0) *
+                     Scale(SPHERE_RADIUS,
+                           SPHERE_RADIUS,
+                           SPHERE_RADIUS));
+    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
+    glBindVertexArray(vaos[1]);
+    glDrawArrays(GL_TRIANGLES, 0, SPHERE_COL * SPHERE_ROW);
+    glBindVertexArray(0);
 }
 
 //----------------------------------------------------------------------------
@@ -201,13 +261,8 @@ void display(void)
 
     model_view = camera_view[dir_selector];
 
-    mat4 instance = (Translate(0.0, 2.0, 0.0) *
-                     Scale(BALL_RADIUS * 3,
-                           BALL_RADIUS * 3,
-                           BALL_RADIUS * 3));
-
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * instance);
-    glutWireSphere(BALL_RADIUS, 50, 50);
+    transformation = mat4(1.0);
+    sphere();
 
     transformation = RotateY(Theta[Base]);
     // model_view = RotateY(Theta[Base]);
@@ -233,7 +288,7 @@ void init(void)
 
     init_camera();
 
-    init_ball();
+    init_sphere();
 
     colorcube();
 
@@ -254,7 +309,6 @@ void init(void)
                  NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points), points);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
-
     // for robot arms
     glEnableVertexAttribArray(vPosition);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0,
@@ -263,6 +317,23 @@ void init(void)
     glEnableVertexAttribArray(vColor);
     glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0,
                           BUFFER_OFFSET(sizeof(points)));
+
+    // Create and initialize a buffer object for sphere
+    glBindVertexArray(vaos[1]);
+    glGenBuffers(1, &vbos[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(spherePoints) + sizeof(colors),
+                 NULL, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(spherePoints), spherePoints);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(spherePoints),
+                    sizeof(sphereColors), sphereColors);
+    // for sphere
+    glEnableVertexAttribArray(vPosition);
+    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0,
+                          BUFFER_OFFSET(0));
+    glEnableVertexAttribArray(vColor);
+    glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0,
+                          BUFFER_OFFSET(sizeof(spherePoints)));
 
     ModelView = glGetUniformLocation(program, "ModelView");
     Projection = glGetUniformLocation(program, "Projection");
