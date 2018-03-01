@@ -1,6 +1,6 @@
 
 #include "Angel.h"
-
+#include "string.h"
 typedef Angel::vec4 point4;
 typedef Angel::vec4 color4;
 
@@ -14,12 +14,14 @@ color4 colors[NumVertices];
 const float PI = 3.14;
 const int SPHERE_ROW = 20;
 const int SPHERE_COL = 20;
-const int SPHERE_RADIUS = 5;
+const int SPHERE_RADIUS = 1;
 point4 spherePoints[SPHERE_ROW * SPHERE_COL * 2 * 3];
 color4 sphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
 GLuint vaos[2]; // 0: robot cube, 1:line loop, 2:triangle fan
 GLuint vbos[2]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
-
+// sphere movement
+point4 start_position;
+point4 end_position;
 // windowsize
 int window_width = 512;
 int window_height = 512;
@@ -168,8 +170,8 @@ void init_sphere()
         {
             float u = i * step_u + start_u;
             float v = j * step_v + start_v;
-            float un =  u + step_u;
-            float vn =  v + step_v;
+            float un = u + step_u;
+            float vn = v + step_v;
             point4 p0 = f_u_v(u, v);
             point4 p1 = f_u_v(u, vn);
             point4 p2 = f_u_v(un, v);
@@ -484,6 +486,22 @@ void specialkey(int key, int x, int y)
 int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
+    // calculate the movement
+    if (argc == 8)
+    {
+        // check the view mode
+        if (strcmp(argv[7], "-tv") == 0)
+        {
+            dir_selector = Up;
+        }
+        else if (strcmp(argv[7], "-sv") == 0)
+        {
+            dir_selector = Right;
+        }
+        // set the ball to the start point
+
+    }
+
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(window_width, window_height);
     glutInitContextVersion(3, 2);
