@@ -14,7 +14,7 @@ color4 colors[NumVertices];
 const float PI = 3.14;
 const int SPHERE_ROW = 20;
 const int SPHERE_COL = 20;
-const int SPHERE_RADIUS = 1;
+const int SPHERE_RADIUS = 5;
 point4 spherePoints[SPHERE_ROW * SPHERE_COL * 2 * 3];
 color4 sphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
 GLuint vaos[2]; // 0: robot cube, 1:line loop, 2:triangle fan
@@ -158,25 +158,25 @@ void init_sphere()
     float start_u = 0.0;
     float start_v = 0.0;
     float end_u = PI * 2.0;
-    float end_v = PI;
+    float end_v = PI * 1.0;
     float step_u = (end_u - start_u) / SPHERE_COL;
     float step_v = (end_v - start_v) / SPHERE_ROW;
     int k = 0;
-    for (int i = 0; i < SPHERE_COL; i++)
+    for (int i = 0; i < SPHERE_ROW; i++)
     {
-        for (int j = 0; j < SPHERE_ROW; j++)
+        for (int j = 0; j < SPHERE_COL; j++)
         {
             float u = i * step_u + start_u;
             float v = j * step_v + start_v;
-            float un = (i + 1 == SPHERE_COL) ? end_u : u + step_u;
-            float vn = (j + 1 == SPHERE_ROW) ? end_v : v + step_v;
+            float un =  u + step_u;
+            float vn =  v + step_v;
             point4 p0 = f_u_v(u, v);
             point4 p1 = f_u_v(u, vn);
             point4 p2 = f_u_v(un, v);
             point4 p3 = f_u_v(un, vn);
             spherePoints[k++] = p0;
-            spherePoints[k++] = p1;
             spherePoints[k++] = p2;
+            spherePoints[k++] = p1;
             spherePoints[k++] = p3;
             spherePoints[k++] = p1;
             spherePoints[k++] = p2;
@@ -248,7 +248,7 @@ void sphere()
                            SPHERE_RADIUS));
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
     glBindVertexArray(vaos[1]);
-    glDrawArrays(GL_TRIANGLES, 0, SPHERE_COL * SPHERE_ROW);
+    glDrawArrays(GL_TRIANGLES, 0, 2 * 3 * SPHERE_COL * SPHERE_ROW);
     glBindVertexArray(0);
 }
 
