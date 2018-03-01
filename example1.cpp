@@ -6,8 +6,17 @@ typedef Angel::vec4 color4;
 
 const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
+// robot cube
 point4 points[NumVertices];
 color4 colors[NumVertices];
+
+// line loop
+const SPHERE_ROW = 20;
+const SPHERE_COL = 20;
+point4 SpherePoints[SPHERE_ROW * SPHERE_COL * 2 * 3];
+color4 SphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
+GLuint vaos[3]; // 0: robot cube, 1:line loop, 2:triangle fan
+GLuint vbos[5]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
 
 // windowsize
 int window_width = 512;
@@ -43,7 +52,7 @@ const GLfloat LOWER_ARM_HEIGHT = 5.0;
 const GLfloat LOWER_ARM_WIDTH = 0.5;
 const GLfloat UPPER_ARM_HEIGHT = 5.0;
 const GLfloat UPPER_ARM_WIDTH = 0.5;
-
+const GLfloat BALL_RADIUS = 1;
 // Shader transformation matrices
 mat4 model_view;
 enum
@@ -151,8 +160,8 @@ void base()
                            BASE_WIDTH));
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
-
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices/3);
+    glBindVertexArray(vaos[0]);
+    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 }
 
 //----------------------------------------------------------------------------
@@ -165,7 +174,8 @@ void upper_arm()
                            UPPER_ARM_WIDTH));
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices/3);
+    glBindVertexArray(vaos[0]);    
+    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 }
 
 //----------------------------------------------------------------------------
@@ -178,15 +188,27 @@ void lower_arm()
                            LOWER_ARM_WIDTH));
 
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices/3);
+    glBindVertexArray(vaos[0]);   
+    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 }
 
 //----------------------------------------------------------------------------
 
 void display(void)
 {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Accumulate ModelView Matrix as we traverse the tree
+
     model_view = camera_view[dir_selector];
+
+    mat4 instance = (Translate(0.0, 2.0, 0.0) *
+                     Scale(BALL_RADIUS * 3,
+                           BALL_RADIUS * 3,
+                           BALL_RADIUS * 3));
+
+    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * instance);
+    glutWireSphere(BALL_RADIUS, 50, 50);
+
     transformation = RotateY(Theta[Base]);
     // model_view = RotateY(Theta[Base]);
     base();
@@ -208,34 +230,36 @@ void display(void)
 
 void init(void)
 {
+
     init_camera();
+
+    init_ball();
 
     colorcube();
 
-    // Create a vertex array object
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    // Load shaders and use the resulting shader program
+    GLuint program = InitShader("vshader81.glsl", "fshader81.glsl");
+    glUseProgram(program);
+    GLuint vColor = glGetAttribLocation(program, "vColor");
+    GLuint vPosition = glGetAttribLocation(program, "vPosition");
 
-    // Create and initialize a buffer object
-    GLuint buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    // Create vertex array object
+    glGenVertexArrays(2, vaos);
+
+    // Create and initialize a buffer object for robot cube
+    glBindVertexArray(vaos[0]);
+    glGenBuffers(1, &vbos[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(points) + sizeof(colors),
                  NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points), points);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
 
-    // Load shaders and use the resulting shader program
-    GLuint program = InitShader("vshader81.glsl", "fshader81.glsl");
-    glUseProgram(program);
-
-    GLuint vPosition = glGetAttribLocation(program, "vPosition");
+    // for robot arms
     glEnableVertexAttribArray(vPosition);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0,
                           BUFFER_OFFSET(0));
 
-    GLuint vColor = glGetAttribLocation(program, "vColor");
     glEnableVertexAttribArray(vColor);
     glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0,
                           BUFFER_OFFSET(sizeof(points)));
