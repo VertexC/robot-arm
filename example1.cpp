@@ -1,6 +1,7 @@
 
 #include "Angel.h"
-#include "string.h"
+#include <string.h>
+#include <iostream>
 typedef Angel::vec4 point4;
 typedef Angel::vec4 color4;
 
@@ -468,14 +469,6 @@ void specialkey(int key, int x, int y)
     switch (key)
     {
     case GLUT_KEY_LEFT:
-        // Incrase the joint angle
-        Theta[Axis] += 5.0;
-        if (Theta[Axis] > 360.0)
-        {
-            Theta[Axis] -= 360.0;
-        }
-        break;
-    case GLUT_KEY_RIGHT:
         // Decrase the joint angle
         Theta[Axis] -= 5.0;
         if (Theta[Axis] < 0.0)
@@ -483,6 +476,25 @@ void specialkey(int key, int x, int y)
             Theta[Axis] += 360.0;
         }
         break;
+    case GLUT_KEY_RIGHT:
+        // Incrase the joint angle
+        Theta[Axis] += 5.0;
+        if (Theta[Axis] > 360.0)
+        {
+            Theta[Axis] -= 360.0;
+        }
+        break;
+    }
+}
+
+//----------------------------------------------------------------------------
+void move(float base_to_start)
+{
+    std::cout << base_to_start * 180 / PI << std::endl;
+    Theta[Base] -= base_to_start * 180 / PI;
+    if (Theta[Base] < 0.0)
+    {
+        Theta[Base] += 360.0;
     }
 }
 //----------------------------------------------------------------------------
@@ -493,6 +505,7 @@ int main(int argc, char **argv)
     // calculate the movement
     if (argc == 8)
     {
+        std::cout << "get input" << std::endl;
         // check the view mode
         if (strcmp(argv[7], "-tv") == 0)
         {
@@ -502,11 +515,16 @@ int main(int argc, char **argv)
         {
             dir_selector = Right;
         }
-        // set the ball to the start point
+        // get position
         start_position = point4(atof(argv[1]), atof(argv[2]), atof(argv[3]), 1.0);
         end_position = point4(atof(argv[4]), atof(argv[6]), atof(argv[6]), 1.0);
-        // test
+        // set
         current_position = start_position;
+        // calculate the ratation needed for base, low arm, high arm
+        float base_to_start = asin(start_position.z /
+                                   (sqrt(pow(start_position.x, 2) +
+                                         pow(start_position.z, 2))));
+        move(base_to_start);
     }
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
