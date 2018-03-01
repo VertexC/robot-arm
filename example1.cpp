@@ -20,8 +20,9 @@ color4 sphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
 GLuint vaos[2]; // 0: robot cube, 1:line loop, 2:triangle fan
 GLuint vbos[2]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
 // sphere movement
-point4 start_position;
-point4 end_position;
+point4 start_position = point4(0.0, 0.0, 0.0, 1.0);
+point4 end_position = point4(0.0, 0.0, 0.0, 1.0);
+point4 current_position = point4(0.0, 0.0, 0.0, 1.0);
 // windowsize
 int window_width = 512;
 int window_height = 512;
@@ -244,7 +245,7 @@ void lower_arm()
 //----------------------------------------------------------------------------
 void sphere()
 {
-    mat4 instance = (Translate(0.0, 2.0, 0.0) *
+    mat4 instance = (Translate(0, 0, 0) *
                      Scale(SPHERE_RADIUS,
                            SPHERE_RADIUS,
                            SPHERE_RADIUS));
@@ -263,7 +264,10 @@ void display(void)
 
     model_view = camera_view[dir_selector];
 
-    transformation = mat4(1.0);
+    transformation = Translate(
+        current_position.x,
+        current_position.y,
+        current_position.z);
     sphere();
 
     transformation = RotateY(Theta[Base]);
@@ -499,7 +503,10 @@ int main(int argc, char **argv)
             dir_selector = Right;
         }
         // set the ball to the start point
-
+        start_position = point4(atof(argv[1]), atof(argv[2]), atof(argv[3]), 1.0);
+        end_position = point4(atof(argv[4]), atof(argv[6]), atof(argv[6]), 1.0);
+        // test
+        current_position = start_position;
     }
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
