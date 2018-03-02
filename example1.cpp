@@ -376,10 +376,10 @@ void display(void)
         }
     }
     else if (mode == GoBack)
-    {   
+    {
         // leave sphere
         sphere();
-        
+
         bool base_is_located = update_rotation(Base);
         transformation = RotateY(CurrentTheta[Base]);
         base();
@@ -550,13 +550,13 @@ void keyboard(unsigned char key, int x, int y)
     case 'Q':
         exit(EXIT_SUCCESS);
         break;
-    case 'w':
+    case '1':
         dir_selector = Up;
         break;
-    case 'e':
+    case '2':
         dir_selector = Front;
         break;
-    case 'r':
+    case '3':
         dir_selector = Right;
         break;
     case 'z':
