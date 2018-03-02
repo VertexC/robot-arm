@@ -26,7 +26,7 @@ timeval start_time;
 point4 start_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 end_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 current_position = point4(0.0, 0.0, 0.0, 1.0);
-const float RotationSpeed = 0.1;
+const float RotationSpeed = 0.05;
 const float EPSILON = pow(10, -4);
 
 // windowsize
@@ -53,7 +53,6 @@ color4 vertex_colors[8] = {
     color4(1.0, 0.0, 1.0, 1.0), // magenta
     color4(0.0, 1.0, 1.0, 1.0), // cyan
     color4(1.0, 1.0, 1.0, 1.0)  // white
-
 };
 
 // Parameters controlling the size of the Robot's arm
@@ -282,8 +281,15 @@ double get_duration()
 bool update_rotation(int component)
 {
     double duration = get_duration();
+    float delta_rotation = RotationTheta[mode][component] - startTheta[component];
+    if(delta_rotation < 0.0){
+        delta_rotation += 360.0;
+    }
+    if(delta_rotation > 360.0){
+        delta_rotation -= 360.0;
+    }
 
-    if (duration * RotationSpeed <= RotationTheta[mode][component] - startTheta[component])
+    if (duration * RotationSpeed <= delta_rotation)
     {
         // update the thetaRotation
         CurrentTheta[component] = startTheta[component] + duration * RotationSpeed;
@@ -291,7 +297,7 @@ bool update_rotation(int component)
     }
     else
     {
-        CurrentTheta[component] = startTheta[component] + RotationTheta[mode][component];
+        CurrentTheta[component] = RotationTheta[mode][component];
         return true; // indicate the component has reached its place
     }
 }
@@ -338,11 +344,6 @@ void display(void)
     else
     {
         // move base and arm to get the ball
-        transformation = Translate(
-            current_position.x,
-            current_position.y,
-            current_position.z);
-        sphere();
 
         bool base_is_located = update_rotation(Base);
         transformation = RotateY(CurrentTheta[Base]);
@@ -355,6 +356,9 @@ void display(void)
         bool upper_arm_is_located = update_rotation(UpperArm);
         transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(CurrentTheta[UpperArm]);
         upper_arm();
+
+        transformation *= Translate(0.0, UPPER_ARM_HEIGHT, 0.0);
+        sphere();
     }
 
     glutSwapBuffers();
