@@ -90,15 +90,15 @@ enum
 };
 int Axis = Base;
 GLfloat CurrentTheta[NumAngles] = {0.0};
-GLfloat startTheta = {0.0};
-GLfloat MoveToBallTheta[NumAngles] = {0.0};
-GLfloat MoveToNewTheta[NumAngles] = {0.0};
+GLfloat startTheta[NumAngles] = {0.0};
 enum
 {
     GetBall = 0,
-    MoveBall = 1
+    MoveBall = 1,
+    NumModes = 2
 };
 int mode = GetBall;
+GLfloat RotationTheta[NumModes][NumAngles] = {0.0};
 // Menu option values
 const int Quit = 6;
 
@@ -283,15 +283,15 @@ bool update_rotation(int component)
 {
     double duration = get_duration();
 
-    if (duration * RotationSpeed <= MoveToBallTheta[component])
+    if (duration * RotationSpeed <= RotationTheta[mode][component] - startTheta[component])
     {
         // update the thetaRotation
-        CurrentTheta[component] = duration * RotationSpeed;
+        CurrentTheta[component] = startTheta[component] + duration * RotationSpeed;
         return false;
     }
     else
     {
-        CurrentTheta[component] = MoveToBallTheta[component];
+        CurrentTheta[component] = startTheta[component] + RotationTheta[mode][component];
         return true; // indicate the component has reached its place
     }
 }
@@ -327,11 +327,32 @@ void display(void)
         if (base_is_located && lower_arm_is_located && upper_arm_is_located)
         {
             // mode = MoveBall;
+            // // set start theta
+            // startTheta[Base] = CurrentTheta[Base];
+            // startTheta[LowerArm] = CurrentTheta[LowerArm];
+            // startTheta[UpperArm] = CurrentTheta[UpperArm];
         }
     }
     else
     {
-        // std::cout << "change into move ball mode" << std::endl;
+        // move base and arm to get the ball
+        transformation = Translate(
+            current_position.x,
+            current_position.y,
+            current_position.z);
+        sphere();
+
+        bool base_is_located = update_rotation(Base);
+        transformation = RotateY(CurrentTheta[Base]);
+        base();
+
+        bool lower_arm_is_located = update_rotation(LowerArm);
+        transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(CurrentTheta[LowerArm]));
+        lower_arm();
+
+        bool upper_arm_is_located = update_rotation(UpperArm);
+        transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(CurrentTheta[UpperArm]);
+        upper_arm();
     }
 
     glutSwapBuffers();
@@ -575,18 +596,9 @@ void move_to_ball(float base_to_position, float lower_arm_to_position, float upp
         tempTheta[LowerArm] -= 360.0;
     }
 
-    if (state == GetBall)
-    {
-        MoveToBallTheta[Base] = tempTheta[Base];
-        MoveToBallTheta[LowerArm] = tempTheta[LowerArm];
-        MoveToBallTheta[UpperArm] = tempTheta[UpperArm];
-    }
-    if (state == MoveBall)
-    {
-        MoveToNewTheta[Base] = tempTheta[Base];
-        MoveToNewTheta[LowerArm] = tempTheta[LowerArm];
-        MoveToNewTheta[UpperArm] = tempTheta[UpperArm];
-    }
+    RotationTheta[state][Base] = tempTheta[Base];
+    RotationTheta[state][LowerArm] = tempTheta[LowerArm];
+    RotationTheta[state][UpperArm] = tempTheta[UpperArm];
 }
 
 float cos_formula(float a, float b, float c)
