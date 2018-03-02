@@ -87,7 +87,8 @@ enum
     NumAngles = 3
 };
 int Axis = Base;
-GLfloat Theta[NumAngles] = {0.0};
+GLfloat CurrentTheta[NumAngles] = {0.0};
+GLfloat startTheta = {0.0};
 GLfloat MoveToBallTheta[NumAngles] = {0.0};
 GLfloat MoveToNewTheta[NumAngles] = {0.0};
 // Menu option values
@@ -277,11 +278,11 @@ void update_rotation(int component)
     if (duration * RotationSpeed <= MoveToBallTheta[component])
     {
         // update the thetaRotation
-        Theta[component] = duration * RotationSpeed;
+        CurrentTheta[component] = duration * RotationSpeed;
     }
     else
     {
-        Theta[component] = MoveToBallTheta[component];
+        CurrentTheta[component] = MoveToBallTheta[component];
     }
 }
 //----------------------------------------------------------------------------
@@ -303,15 +304,15 @@ void display(void)
         sphere();
 
         update_rotation(Base);
-        transformation = RotateY(Theta[Base]);
+        transformation = RotateY(CurrentTheta[Base]);
         base();
 
         update_rotation(LowerArm);
-        transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(Theta[LowerArm]));
+        transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(CurrentTheta[LowerArm]));
         lower_arm();
 
         update_rotation(UpperArm);
-        transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(Theta[UpperArm]);
+        transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(CurrentTheta[UpperArm]);
         upper_arm();
     }
 
@@ -391,20 +392,20 @@ void mouse(int button, int state, int x, int y)
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
     {
         // Incrase the joint angle
-        Theta[Axis] += 5.0;
-        if (Theta[Axis] > 360.0)
+        CurrentTheta[Axis] += 5.0;
+        if (CurrentTheta[Axis] > 360.0)
         {
-            Theta[Axis] -= 360.0;
+            CurrentTheta[Axis] -= 360.0;
         }
     }
 
     if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
     {
         // Decrase the joint angle
-        Theta[Axis] -= 5.0;
-        if (Theta[Axis] < 0.0)
+        CurrentTheta[Axis] -= 5.0;
+        if (CurrentTheta[Axis] < 0.0)
         {
-            Theta[Axis] += 360.0;
+            CurrentTheta[Axis] += 360.0;
         }
     }
 
@@ -500,18 +501,18 @@ void specialkey(int key, int x, int y)
     {
     case GLUT_KEY_LEFT:
         // Decrase the joint angle
-        Theta[Axis] -= 5.0;
-        if (Theta[Axis] < 0.0)
+        CurrentTheta[Axis] -= 5.0;
+        if (CurrentTheta[Axis] < 0.0)
         {
-            Theta[Axis] += 360.0;
+            CurrentTheta[Axis] += 360.0;
         }
         break;
     case GLUT_KEY_RIGHT:
         // Incrase the joint angle
-        Theta[Axis] += 5.0;
-        if (Theta[Axis] > 360.0)
+        CurrentTheta[Axis] += 5.0;
+        if (CurrentTheta[Axis] > 360.0)
         {
-            Theta[Axis] -= 360.0;
+            CurrentTheta[Axis] -= 360.0;
         }
         break;
     }
