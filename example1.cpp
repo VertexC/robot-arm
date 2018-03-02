@@ -27,6 +27,8 @@ point4 start_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 end_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 current_position = point4(0.0, 0.0, 0.0, 1.0);
 const float RotationSpeed = 0.1;
+const float EPSILON = pow(10, -4);
+
 // windowsize
 int window_width = 512;
 int window_height = 512;
@@ -91,6 +93,12 @@ GLfloat CurrentTheta[NumAngles] = {0.0};
 GLfloat startTheta = {0.0};
 GLfloat MoveToBallTheta[NumAngles] = {0.0};
 GLfloat MoveToNewTheta[NumAngles] = {0.0};
+enum
+{
+    GetBall = 0,
+    MoveBall = 1
+};
+int mode = GetBall;
 // Menu option values
 const int Quit = 6;
 
@@ -271,7 +279,7 @@ double get_duration()
     return duration;
 }
 
-void update_rotation(int component)
+bool update_rotation(int component)
 {
     double duration = get_duration();
 
@@ -279,10 +287,12 @@ void update_rotation(int component)
     {
         // update the thetaRotation
         CurrentTheta[component] = duration * RotationSpeed;
+        return false;
     }
     else
     {
         CurrentTheta[component] = MoveToBallTheta[component];
+        return true; // indicate the component has reached its place
     }
 }
 //----------------------------------------------------------------------------
@@ -293,8 +303,7 @@ void display(void)
     // Accumulate ModelView Matrix as we traverse the tree
     model_view = camera_view[dir_selector];
 
-    bool get_ball = false;
-    if (!get_ball)
+    if (mode == GetBall)
     {
         // move base and arm to get the ball
         transformation = Translate(
@@ -303,17 +312,26 @@ void display(void)
             current_position.z);
         sphere();
 
-        update_rotation(Base);
+        bool base_is_located = update_rotation(Base);
         transformation = RotateY(CurrentTheta[Base]);
         base();
 
-        update_rotation(LowerArm);
+        bool lower_arm_is_located = update_rotation(LowerArm);
         transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(CurrentTheta[LowerArm]));
         lower_arm();
 
-        update_rotation(UpperArm);
+        bool upper_arm_is_located = update_rotation(UpperArm);
         transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(CurrentTheta[UpperArm]);
         upper_arm();
+
+        if (base_is_located && lower_arm_is_located && upper_arm_is_located)
+        {
+            // mode = MoveBall;
+        }
+    }
+    else
+    {
+        // std::cout << "change into move ball mode" << std::endl;
     }
 
     glutSwapBuffers();
@@ -519,41 +537,55 @@ void specialkey(int key, int x, int y)
 }
 
 //----------------------------------------------------------------------------
-void move_to_ball(float base_to_start, float lower_arm_to_start, float upper_arm_to_start)
+void move_to_ball(float base_to_position, float lower_arm_to_position, float upper_arm_to_position, int state)
 {
-    MoveToBallTheta[Base] = base_to_start * 180 / PI;
-    MoveToBallTheta[LowerArm] = lower_arm_to_start * 180 / PI;
-    MoveToBallTheta[UpperArm] = upper_arm_to_start * 180 / PI;
+    float tempTheta[NumAngles] = {0.0};
+    tempTheta[Base] = base_to_position * 180 / PI;
+    tempTheta[LowerArm] = lower_arm_to_position * 180 / PI;
+    tempTheta[UpperArm] = upper_arm_to_position * 180 / PI;
 
-    std::cout << base_to_start * 180 / PI << std::endl;
-    std::cout << lower_arm_to_start * 180 / PI << std::endl;
-    std::cout << upper_arm_to_start * 180 / PI << std::endl;
+    std::cout << "-" << base_to_position * 180 / PI << std::endl;
+    std::cout << "--" << lower_arm_to_position * 180 / PI << std::endl;
+    std::cout << "---" << upper_arm_to_position * 180 / PI << std::endl;
 
-    if (MoveToBallTheta[Base] < 0.0)
+    if (tempTheta[Base] < 0.0)
     {
-        MoveToBallTheta[Base] += 360.0;
+        tempTheta[Base] += 360.0;
     }
-    else if (MoveToBallTheta[Base] > 360.0)
+    else if (tempTheta[Base] > 360.0)
     {
-        MoveToBallTheta[Base] -= 360.0;
-    }
-
-    if (MoveToBallTheta[UpperArm] < 0.0)
-    {
-        MoveToBallTheta[UpperArm] += 360.0;
-    }
-    else if (MoveToBallTheta[UpperArm] > 360.0)
-    {
-        MoveToBallTheta[UpperArm] -= 360.0;
+        tempTheta[Base] -= 360.0;
     }
 
-    if (MoveToBallTheta[LowerArm] < 0.0)
+    if (tempTheta[UpperArm] < 0.0)
     {
-        MoveToBallTheta[LowerArm] += 360.0;
+        tempTheta[UpperArm] += 360.0;
     }
-    else if (MoveToBallTheta[LowerArm] > 360.0)
+    else if (tempTheta[UpperArm] > 360.0)
     {
-        MoveToBallTheta[LowerArm] -= 360.0;
+        tempTheta[UpperArm] -= 360.0;
+    }
+
+    if (tempTheta[LowerArm] < 0.0)
+    {
+        tempTheta[LowerArm] += 360.0;
+    }
+    else if (tempTheta[LowerArm] > 360.0)
+    {
+        tempTheta[LowerArm] -= 360.0;
+    }
+
+    if (state == GetBall)
+    {
+        MoveToBallTheta[Base] = tempTheta[Base];
+        MoveToBallTheta[LowerArm] = tempTheta[LowerArm];
+        MoveToBallTheta[UpperArm] = tempTheta[UpperArm];
+    }
+    if (state == MoveBall)
+    {
+        MoveToNewTheta[Base] = tempTheta[Base];
+        MoveToNewTheta[LowerArm] = tempTheta[LowerArm];
+        MoveToNewTheta[UpperArm] = tempTheta[UpperArm];
     }
 }
 
@@ -562,6 +594,87 @@ float cos_formula(float a, float b, float c)
     return acos((pow(a, 2) + pow(b, 2) - pow(c, 2)) / (2 * a * b));
 }
 //----------------------------------------------------------------------------
+
+void rotation_calculation(point4 position, int state)
+{
+    // calculate the ratation needed for base, low arm, high arm
+
+    float base_to_position = 0.0;
+    float lower_arm_to_position = 0.0;
+    float upper_arm_to_position = 0.0;
+    // for base
+    float base_theta = 0.0;
+    // spacecial casae
+    if (-EPSILON < position.x && position.x < EPSILON &&
+        -EPSILON < position.z && position.z < EPSILON)
+    {
+        base_theta = 0;
+    }
+    else
+    {
+        base_theta = asin(abs(position.z) /
+                          (sqrt(pow(position.x, 2) +
+                                pow(position.z, 2))));
+    }
+    std::cout << base_theta * 180 / PI << std::endl;
+    if (position.x < 0 && position.z < 0)
+    {
+        std::cout << "1" << std::endl;
+        base_to_position = -(PI + base_theta);
+    }
+    else if (position.x < 0 && position.z > 0)
+    {
+        std::cout << "2" << std::endl;
+        base_to_position = -(PI - base_theta);
+    }
+    else if (position.x > 0 && position.z > 0)
+    {
+        base_to_position = -base_theta;
+    }
+    else if (position.x > 0 && position.z < 0)
+    {
+        base_to_position = -(2 * PI - base_theta);
+    }
+    // for lower_arm and upper_arm
+    // special case
+    if (-EPSILON < position.y - BASE_HEIGHT && position.y - BASE_HEIGHT < EPSILON &&
+        -EPSILON < position.x && position.x < EPSILON)
+    {
+        std::cout << "special case" << std::endl;
+        lower_arm_to_position = 0;
+        upper_arm_to_position = -PI;
+    }
+    else
+    {
+        position.y -= BASE_HEIGHT;
+        position.x = sqrt(pow(position.x, 2) + pow(position.z, 2));
+        if (position.y < 0)
+        {
+            lower_arm_to_position -= PI;
+            float theta2 = asin(-position.y /
+                                (sqrt(pow(position.x, 2) +
+                                      pow(position.y, 2))));
+            float distance = sqrt(pow(position.x, 2) + pow(position.y, 2));
+            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
+            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
+            lower_arm_to_position += (PI / 2 - theta1 - theta2);
+            upper_arm_to_position = (theta1 + theta3);
+        }
+        else
+        {
+            float theta2 = asin(position.y /
+                                (sqrt(pow(position.x, 2) +
+                                      pow(position.y, 2))));
+            float distance = sqrt(pow(position.x, 2) + pow(position.y, 2));
+            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
+            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
+            lower_arm_to_position = -(PI / 2 - theta1 - theta2);
+            upper_arm_to_position = -(theta1 + theta3);
+        }
+    }
+    // set the rotation to move to the ball
+    move_to_ball(base_to_position, lower_arm_to_position, upper_arm_to_position, state);
+}
 
 int main(int argc, char **argv)
 {
@@ -584,61 +697,9 @@ int main(int argc, char **argv)
         end_position = point4(atof(argv[4]), atof(argv[5]), atof(argv[6]), 1.0);
         // set
         current_position = start_position;
-        // calculate the ratation needed for base, low arm, high arm
-        // for base
-        float base_to_start = 0.0;
-        float base_theta = asin(abs(start_position.z) /
-                                (sqrt(pow(start_position.x, 2) +
-                                      pow(start_position.z, 2))));
-        std::cout << base_theta * 180 / PI << std::endl;
-        if (start_position.x < 0 && start_position.z < 0)
-        {
-            std::cout << "1" << std::endl;
-            base_to_start = -(PI + base_theta);
-        }
-        else if (start_position.x < 0 && start_position.z > 0)
-        {
-            std::cout << "2" << std::endl;
-            base_to_start = -(PI - base_theta);
-        }
-        else if (start_position.x > 0 && start_position.z > 0)
-        {
-            base_to_start = -base_theta;
-        }
-        else if (start_position.x > 0 && start_position.z < 0)
-        {
-            base_to_start = -(2 * PI - base_theta);
-        }
-        // for lower_arm and upper_arm
-        float lower_arm_to_start = 0;
-        float upper_arm_to_start = 0;
-        start_position.y -= BASE_HEIGHT;
-        start_position.x = sqrt(pow(start_position.x, 2) + pow(start_position.z, 2));
-        if (start_position.y < 0)
-        {
-            lower_arm_to_start -= PI;
-            float theta2 = asin(-start_position.y /
-                                (sqrt(pow(start_position.x, 2) +
-                                      pow(start_position.y, 2))));
-            float distance = sqrt(pow(start_position.x, 2) + pow(start_position.y, 2));
-            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
-            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
-            lower_arm_to_start += (PI / 2 - theta1 - theta2);
-            upper_arm_to_start = (theta1 + theta3);
-        }
-        else
-        {
-            float theta2 = asin(start_position.y /
-                                (sqrt(pow(start_position.x, 2) +
-                                      pow(start_position.y, 2))));
-            float distance = sqrt(pow(start_position.x, 2) + pow(start_position.y, 2));
-            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
-            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
-            lower_arm_to_start = -(PI / 2 - theta1 - theta2);
-            upper_arm_to_start = -(theta1 + theta3);
-        }
-        // set the rotation to move to the ball
-        move_to_ball(base_to_start, lower_arm_to_start, upper_arm_to_start);
+        // calculate the rotation needed
+        rotation_calculation(start_position, GetBall);
+        rotation_calculation(end_position, MoveBall);
     }
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
