@@ -326,11 +326,13 @@ void display(void)
 
         if (base_is_located && lower_arm_is_located && upper_arm_is_located)
         {
-            // mode = MoveBall;
-            // // set start theta
-            // startTheta[Base] = CurrentTheta[Base];
-            // startTheta[LowerArm] = CurrentTheta[LowerArm];
-            // startTheta[UpperArm] = CurrentTheta[UpperArm];
+            mode = MoveBall;
+            // set start theta
+            startTheta[Base] = CurrentTheta[Base];
+            startTheta[LowerArm] = CurrentTheta[LowerArm];
+            startTheta[UpperArm] = CurrentTheta[UpperArm];
+            // reset the time
+            gettimeofday(&start_time, NULL);
         }
     }
     else
