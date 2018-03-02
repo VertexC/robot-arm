@@ -76,7 +76,8 @@ int dir_selector = 0;
 mat4 camera_view[NumDirections]; // for 3 view direction
 mat4 projection[NumDirections];
 
-mat4 transformation;
+mat4 transformation = mat4(1.0);
+mat4 sphere_transformation = mat4(1.0);
 GLuint ModelView, Projection;
 
 // Array of rotation angles (in degrees) for each rotation axis
@@ -94,7 +95,8 @@ enum
 {
     GetBall = 0,
     MoveBall = 1,
-    NumModes = 2
+    GoBack = 2,
+    NumModes = 3
 };
 int mode = GetBall;
 GLfloat RotationTheta[NumModes][NumAngles] = {0.0};
@@ -262,7 +264,7 @@ void sphere()
                      Scale(SPHERE_RADIUS,
                            SPHERE_RADIUS,
                            SPHERE_RADIUS));
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * transformation * instance);
+    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * sphere_transformation * instance);
     glBindVertexArray(vaos[1]);
     glDrawArrays(GL_TRIANGLES, 0, 2 * 3 * SPHERE_COL * SPHERE_ROW);
     glBindVertexArray(0);
@@ -282,10 +284,12 @@ bool update_rotation(int component)
 {
     double duration = get_duration();
     float delta_rotation = RotationTheta[mode][component] - startTheta[component];
-    if(delta_rotation < 0.0){
+    if (delta_rotation < 0.0)
+    {
         delta_rotation += 360.0;
     }
-    if(delta_rotation > 360.0){
+    if (delta_rotation > 360.0)
+    {
         delta_rotation -= 360.0;
     }
 
@@ -308,11 +312,11 @@ void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Accumulate ModelView Matrix as we traverse the tree
     model_view = camera_view[dir_selector];
-
+    sphere_transformation = mat4(1.0);
     if (mode == GetBall)
     {
         // move base and arm to get the ball
-        transformation = Translate(
+        sphere_transformation = Translate(
             current_position.x,
             current_position.y,
             current_position.z);
@@ -341,7 +345,7 @@ void display(void)
             gettimeofday(&start_time, NULL);
         }
     }
-    else
+    else if (mode == MoveBall)
     {
         // move base and arm to get the ball
 
@@ -357,8 +361,24 @@ void display(void)
         transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(CurrentTheta[UpperArm]);
         upper_arm();
 
-        transformation *= Translate(0.0, UPPER_ARM_HEIGHT, 0.0);
+        sphere_transformation = transformation * Translate(0.0, UPPER_ARM_HEIGHT, 0.0);
         sphere();
+
+        if (base_is_located && lower_arm_is_located && upper_arm_is_located)
+        {
+            // mode = GoBack;
+            // // get the record of tranformation of ball
+            // sphere_tranformation
+            // // set start theta
+            // startTheta[Base] = CurrentTheta[Base];
+            // startTheta[LowerArm] = CurrentTheta[LowerArm];
+            // startTheta[UpperArm] = CurrentTheta[UpperArm];
+            // // reset the time
+            // gettimeofday(&start_time, NULL);
+        }
+    }
+    else if (mode == GoBack)
+    {
     }
 
     glutSwapBuffers();
