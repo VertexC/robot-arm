@@ -17,7 +17,7 @@ INCLUDEDIR=/usr/include/
 LIBDIR=/usr/lib
 
 # If you have more source files add them here 
-SOURCE= example1.cpp include/InitShader.cpp
+SOURCE= myrobot.cpp include/InitShader.cpp
 
 # The compiler we are using 
 CC= g++
@@ -28,7 +28,7 @@ CC= g++
 CFLAGS= -O3 -g -Wall -pedantic -DGL_GLEXT_PROTOTYPES
 
 # The name of the final executable 
-EXECUTABLE=example
+EXECUTABLE=myrobot
 
 # The basic library we are using add the other libraries you want to link
 # to your program here 
@@ -45,6 +45,9 @@ OBJECT= $(SOURCE:.cpp=.o)
 
 # Don't touch any of these either if you don't know what you're doing 
 all: $(OBJECT) depend
+	$(CC) $(CFLAGS) $(INCLUDEFLAG) $(LIBFLAG) $(OBJECT) -o $(EXECUTABLE) $(LDFLAGS) 
+
+robot: $(OBJECT) depend
 	$(CC) $(CFLAGS) $(INCLUDEFLAG) $(LIBFLAG) $(OBJECT) -o $(EXECUTABLE) $(LDFLAGS) 
 
 depend:
