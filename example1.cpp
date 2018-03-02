@@ -2,6 +2,7 @@
 #include "Angel.h"
 #include <string.h>
 #include <iostream>
+#include <sys/time.h>
 typedef Angel::vec4 point4;
 typedef Angel::vec4 color4;
 
@@ -21,10 +22,11 @@ color4 sphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
 GLuint vaos[2]; // 0: robot cube, 1:line loop, 2:triangle fan
 GLuint vbos[2]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
 // sphere movement
+timeval start_time;
 point4 start_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 end_position = point4(0.0, 0.0, 0.0, 1.0);
 point4 current_position = point4(0.0, 0.0, 0.0, 1.0);
-const float EPSILON = pow(10, -5);
+const float RotationSpeed = 0.1;
 // windowsize
 int window_width = 512;
 int window_height = 512;
@@ -86,7 +88,8 @@ enum
 };
 int Axis = Base;
 GLfloat Theta[NumAngles] = {0.0};
-
+GLfloat MoveToBallTheta[NumAngles] = {0.0};
+GLfloat MoveToNewTheta[NumAngles] = {0.0};
 // Menu option values
 const int Quit = 6;
 
@@ -257,34 +260,60 @@ void sphere()
     glBindVertexArray(0);
 }
 
+//---------------------------------------------------------------------------
+double get_duration()
+{
+    timeval current_time;
+    gettimeofday(&current_time, NULL);
+    double duration = (current_time.tv_sec - start_time.tv_sec) * 1000 +
+                      (current_time.tv_usec - start_time.tv_usec) / 1000;
+    return duration;
+}
+
+void update_rotation(int component)
+{
+    double duration = get_duration();
+
+    if (duration * RotationSpeed <= MoveToBallTheta[component])
+    {
+        // update the thetaRotation
+        Theta[component] = duration * RotationSpeed;
+    }
+    else
+    {
+        Theta[component] = MoveToBallTheta[component];
+    }
+}
 //----------------------------------------------------------------------------
 
 void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Accumulate ModelView Matrix as we traverse the tree
-
     model_view = camera_view[dir_selector];
 
-    transformation = Translate(
-        current_position.x,
-        current_position.y,
-        current_position.z);
-    sphere();
+    bool get_ball = false;
+    if (!get_ball)
+    {
+        // move base and arm to get the ball
+        transformation = Translate(
+            current_position.x,
+            current_position.y,
+            current_position.z);
+        sphere();
 
-    transformation = RotateY(Theta[Base]);
-    // model_view = RotateY(Theta[Base]);
-    base();
+        update_rotation(Base);
+        transformation = RotateY(Theta[Base]);
+        base();
 
-    // model_view *= (Translate(0.0, BASE_HEIGHT, 0.0) *
-    //                RotateZ(Theta[LowerArm]));
-    transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(Theta[LowerArm]));
-    lower_arm();
+        update_rotation(LowerArm);
+        transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(Theta[LowerArm]));
+        lower_arm();
 
-    // model_view *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0) *
-    //                RotateZ(Theta[UpperArm]));
-    transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(Theta[UpperArm]);
-    upper_arm();
+        update_rotation(UpperArm);
+        transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(Theta[UpperArm]);
+        upper_arm();
+    }
 
     glutSwapBuffers();
 }
@@ -489,40 +518,41 @@ void specialkey(int key, int x, int y)
 }
 
 //----------------------------------------------------------------------------
-void move(float base_to_start, float lower_arm_to_start, float upper_arm_to_start)
+void move_to_ball(float base_to_start, float lower_arm_to_start, float upper_arm_to_start)
 {
-    Theta[Base] = base_to_start * 180 / PI;
-    Theta[LowerArm] = lower_arm_to_start * 180 / PI;
-    Theta[UpperArm] = upper_arm_to_start * 180 / PI;
+    MoveToBallTheta[Base] = base_to_start * 180 / PI;
+    MoveToBallTheta[LowerArm] = lower_arm_to_start * 180 / PI;
+    MoveToBallTheta[UpperArm] = upper_arm_to_start * 180 / PI;
+
     std::cout << base_to_start * 180 / PI << std::endl;
     std::cout << lower_arm_to_start * 180 / PI << std::endl;
     std::cout << upper_arm_to_start * 180 / PI << std::endl;
 
-    if (Theta[Base] < 0.0)
+    if (MoveToBallTheta[Base] < 0.0)
     {
-        Theta[Base] += 360.0;
+        MoveToBallTheta[Base] += 360.0;
     }
-    else if (Theta[Base] > 360.0)
+    else if (MoveToBallTheta[Base] > 360.0)
     {
-        Theta[Base] -= 360.0;
-    }
-
-    if (Theta[UpperArm] < 0.0)
-    {
-        Theta[UpperArm] += 360.0;
-    }
-    else if (Theta[UpperArm] > 360.0)
-    {
-        Theta[UpperArm] -= 360.0;
+        MoveToBallTheta[Base] -= 360.0;
     }
 
-    if (Theta[LowerArm] < 0.0)
+    if (MoveToBallTheta[UpperArm] < 0.0)
     {
-        Theta[LowerArm] += 360.0;
+        MoveToBallTheta[UpperArm] += 360.0;
     }
-    else if (Theta[LowerArm] > 360.0)
+    else if (MoveToBallTheta[UpperArm] > 360.0)
     {
-        Theta[LowerArm] -= 360.0;
+        MoveToBallTheta[UpperArm] -= 360.0;
+    }
+
+    if (MoveToBallTheta[LowerArm] < 0.0)
+    {
+        MoveToBallTheta[LowerArm] += 360.0;
+    }
+    else if (MoveToBallTheta[LowerArm] > 360.0)
+    {
+        MoveToBallTheta[LowerArm] -= 360.0;
     }
 }
 
@@ -606,8 +636,8 @@ int main(int argc, char **argv)
             lower_arm_to_start = -(PI / 2 - theta1 - theta2);
             upper_arm_to_start = -(theta1 + theta3);
         }
-        // for upper_arm
-        move(base_to_start, lower_arm_to_start, upper_arm_to_start);
+        // set the rotation to move to the ball
+        move_to_ball(base_to_start, lower_arm_to_start, upper_arm_to_start);
     }
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -618,6 +648,8 @@ int main(int argc, char **argv)
     glewExperimental = GL_TRUE;
     glewInit();
     init();
+    // set start time
+    gettimeofday(&start_time, NULL);
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
