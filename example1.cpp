@@ -312,7 +312,6 @@ void display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Accumulate ModelView Matrix as we traverse the tree
     model_view = camera_view[dir_selector];
-    sphere_transformation = mat4(1.0);
     if (mode == GetBall)
     {
         // move base and arm to get the ball
@@ -366,19 +365,32 @@ void display(void)
 
         if (base_is_located && lower_arm_is_located && upper_arm_is_located)
         {
-            // mode = GoBack;
-            // // get the record of tranformation of ball
-            // sphere_tranformation
-            // // set start theta
-            // startTheta[Base] = CurrentTheta[Base];
-            // startTheta[LowerArm] = CurrentTheta[LowerArm];
-            // startTheta[UpperArm] = CurrentTheta[UpperArm];
-            // // reset the time
-            // gettimeofday(&start_time, NULL);
+            mode = GoBack;
+            // get the record of tranformation of ball
+            // set start theta
+            startTheta[Base] = CurrentTheta[Base];
+            startTheta[LowerArm] = CurrentTheta[LowerArm];
+            startTheta[UpperArm] = CurrentTheta[UpperArm];
+            // reset the time
+            gettimeofday(&start_time, NULL);
         }
     }
     else if (mode == GoBack)
-    {
+    {   
+        // leave sphere
+        sphere();
+        
+        bool base_is_located = update_rotation(Base);
+        transformation = RotateY(CurrentTheta[Base]);
+        base();
+
+        bool lower_arm_is_located = update_rotation(LowerArm);
+        transformation *= (Translate(0.0, BASE_HEIGHT, 0.0) * RotateZ(CurrentTheta[LowerArm]));
+        lower_arm();
+
+        bool upper_arm_is_located = update_rotation(UpperArm);
+        transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(CurrentTheta[UpperArm]);
+        upper_arm();
     }
 
     glutSwapBuffers();
