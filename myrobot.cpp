@@ -360,7 +360,7 @@ void display(void)
         transformation *= (Translate(0.0, LOWER_ARM_HEIGHT, 0.0)) * RotateZ(CurrentTheta[UpperArm]);
         upper_arm();
 
-        sphere_transformation = transformation * Translate(0.0, UPPER_ARM_HEIGHT, 0.0);
+        sphere_transformation = transformation * Translate(0.0, UPPER_ARM_HEIGHT + SPHERE_RADIUS, 0.0);
         sphere();
 
         if (base_is_located && lower_arm_is_located && upper_arm_is_located)
@@ -686,7 +686,7 @@ void rotation_calculation(point4 position, int state)
         base_to_position = -(2 * PI - base_theta);
     }
     // for lower_arm and upper_arm
-    // special case
+    // special case won't ocure
     if (-EPSILON < position.y - BASE_HEIGHT && position.y - BASE_HEIGHT < EPSILON &&
         -EPSILON < position.x && position.x < EPSILON)
     {
@@ -705,8 +705,8 @@ void rotation_calculation(point4 position, int state)
                                 (sqrt(pow(position.x, 2) +
                                       pow(position.y, 2))));
             float distance = sqrt(pow(position.x, 2) + pow(position.y, 2));
-            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
-            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
+            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT + SPHERE_RADIUS);
+            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT + SPHERE_RADIUS, LOWER_ARM_HEIGHT);
             lower_arm_to_position += (PI / 2 - theta1 - theta2);
             upper_arm_to_position = (theta1 + theta3);
         }
@@ -716,8 +716,8 @@ void rotation_calculation(point4 position, int state)
                                 (sqrt(pow(position.x, 2) +
                                       pow(position.y, 2))));
             float distance = sqrt(pow(position.x, 2) + pow(position.y, 2));
-            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT);
-            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT, LOWER_ARM_HEIGHT);
+            float theta1 = cos_formula(LOWER_ARM_HEIGHT, distance, UPPER_ARM_HEIGHT + SPHERE_RADIUS);
+            float theta3 = cos_formula(distance, UPPER_ARM_HEIGHT + SPHERE_RADIUS, LOWER_ARM_HEIGHT);
             lower_arm_to_position = -(PI / 2 - theta1 - theta2);
             upper_arm_to_position = -(theta1 + theta3);
         }
