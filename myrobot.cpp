@@ -17,10 +17,12 @@ const float PI = 3.14;
 const int SPHERE_ROW = 20;
 const int SPHERE_COL = 20;
 const int SPHERE_RADIUS = 1;
-point4 spherePoints[SPHERE_ROW * SPHERE_COL * 2 * 3];
-color4 sphereColors[SPHERE_ROW * SPHERE_COL * 2 * 3];
-GLuint vaos[2]; // 0: robot cube, 1:line loop, 2:triangle fan
-GLuint vbos[2]; // 0: robot cube.v.c, 1,2:line loop.v,c, 3,4:triangle fan.v.c
+point4 spherePoints[SPHERE_ROW * SPHERE_COL * 4];
+color4 sphereColors[SPHERE_ROW * SPHERE_COL * 4];
+GLuint sphereIndexs[SPHERE_ROW * SPHERE_COL * 2 * 3];
+GLuint vaos[2];
+GLuint vbos[2];
+GLuint ebo;
 // sphere movement
 timeval start_time;
 point4 start_position = point4(0.0, 0.0, 0.0, 1.0);
@@ -180,6 +182,7 @@ void init_sphere()
     float step_u = (end_u - start_u) / SPHERE_COL;
     float step_v = (end_v - start_v) / SPHERE_ROW;
     int k = 0;
+    int z = 0;
     for (int i = 0; i < SPHERE_ROW; i++)
     {
         for (int j = 0; j < SPHERE_COL; j++)
@@ -192,12 +195,18 @@ void init_sphere()
             point4 p1 = f_u_v(u, vn);
             point4 p2 = f_u_v(un, v);
             point4 p3 = f_u_v(un, vn);
-            spherePoints[k++] = p0;
-            spherePoints[k++] = p2;
-            spherePoints[k++] = p1;
-            spherePoints[k++] = p3;
-            spherePoints[k++] = p1;
-            spherePoints[k++] = p2;
+            spherePoints[k] = p0;
+            spherePoints[k+1] = p1;
+            spherePoints[k+2] = p2;
+            spherePoints[k+3] = p3;
+            sphereIndexs[z] = k;
+            sphereIndexs[z+1] = k+1;
+            sphereIndexs[z+2] = k+2;
+            sphereIndexs[z+3] = k+1;
+            sphereIndexs[z+4] = k+2;
+            sphereIndexs[z+5] = k+3;            
+            k += 4;
+            z += 6;
         }
     }
     for (int i = 0; i < SPHERE_COL * SPHERE_ROW; i++)
@@ -266,7 +275,8 @@ void sphere()
                            SPHERE_RADIUS));
     glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view * sphere_transformation * instance);
     glBindVertexArray(vaos[1]);
-    glDrawArrays(GL_TRIANGLES, 0, 2 * 3 * SPHERE_COL * SPHERE_ROW);
+    // glDrawArrays(GL_TRIANGLES, 0, 2 * 3 * SPHERE_COL * SPHERE_ROW);
+    glDrawElements(GL_TRIANGLES, SPHERE_COL * SPHERE_ROW * 2 * 3, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 
@@ -442,6 +452,9 @@ void init(void)
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(spherePoints), spherePoints);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(spherePoints),
                     sizeof(sphereColors), sphereColors);
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphereIndexs), sphereIndexs, GL_DYNAMIC_DRAW);
     // for sphere
     glEnableVertexAttribArray(vPosition);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0,
